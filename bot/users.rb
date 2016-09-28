@@ -31,7 +31,7 @@ module Bot
 
 
 		def initialize()
-			@users={}
+			@users=[]
 			# load results from database
 			if Bot.db.is_connected? then
 				Users::load_queries
@@ -39,10 +39,11 @@ module Bot
 				results = Bot.db.query("users_select")
 				results.each do |row|
 				  user     	  	 = Bot::User.new()
-				  user.firstname = row['firstname']
-				  user.lastname  = row['lastname']
+				  user.first_name = row['first_name']
+				  user.last_name  = row['last_name']
 				  user.mail 	 = row['email']
 				  @users << user
+				  Bot.log.info user
 				end
 			end
 		end
@@ -54,9 +55,9 @@ module Bot
 
 			if Bot::Db.is_connected then
 				params = {
-					'firstname' => user.firstname,
-					'lastname' => user.lastname,
-					'mail' => user.mail
+					'first_name' => user.first_name,
+					'last_name' => user.last_name,
+					'email' => user.mail
 				 }
 				Bot::Db.query("users_insert", params)
 			end

@@ -3,15 +3,15 @@
 
 
 CREATE TABLE users (
-    id integer NOT NULL,
+    id serial,
     first_name character varying(30),
     last_name character varying(30),
     email character varying(30),
     from_date timestamp without time zone DEFAULT now(),
     last_date timestamp without time zone DEFAULT now(),
+    PRIMARY KEY (id),
     CONSTRAINT users_check
-        CHECK (last_date > from_date)
-        PRIMARY_KEY id
+        CHECK (last_date >= from_date)
 );
 
 
@@ -23,7 +23,7 @@ CREATE TABLE images(
 
 
 CREATE TABLE doleances(
-usr_id integer,
+usr_id integer not null,
 msg varchar(300),
 img_id CHAR(8),
 date timestamp DEFAULT now(),
