@@ -117,8 +117,9 @@ END
 		}
 	}
 
+	
 	def self.mergeHash(old_path,new_path)
-		return old_path.merge(new_path) do |key,oldval,newval| 
+		return old_path.merge(new_path) do |key,oldval,newval|
 			if oldval.class.to_s=="Hash" then
 				self.mergeHash(oldval,newval)
 			else
@@ -128,9 +129,9 @@ END
 	end
 
 	def self.mergeMenu(old_path,new_path)
-		return old_path.merge(new_path) do |key,oldval,newval| 
+		return old_path.merge(new_path) do |key,oldval,newval|
 			if key==:kbd then
-				oldval.push(newval) 
+				oldval.push(newval)
 			else
 				self.mergeMenu(oldval,newval)
 			end
@@ -138,7 +139,7 @@ END
 	end
 
 	def self.addMenu(path)
-		@@screens=self.mergeMenu(@@screens,path) 
+		@@screens=self.mergeMenu(@@screens,path)
 	end
 
 	def self.updateScreens(new_screens)

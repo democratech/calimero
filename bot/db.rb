@@ -21,16 +21,23 @@ module Bot
 		@@db=nil
 		@@queries={}
 
-		def self.init
-			return unless defined? DBNAME
+		def initialize
+			return unless DATABASE
 			Bot.log.debug "connect to database : #{DBNAME} with user : #{DBUSER}"
-			@@db=PG.connect(
-				"dbname"=>DBNAME,
-				"user"=>DBUSER,
-				"password"=>DBPWD,
-				"host"=>DBHOST,
-				"port"=>DBPORT
-			)
+			begin
+				@@db=PG.connect(
+					"dbname"=>DBNAME,
+					"user"=>DBUSER,
+					"password"=>DBPWD,
+					"host"=>DBHOST,
+					"port"=>DBPORT
+				)
+			    Bot.log.debug @@db.server_version
+			rescue PG::Error => e
+			    Bot.log.error e.message
+			ensure
+			    @@db.close if @@db
+			end
 		end
 
 		def self.is_connected

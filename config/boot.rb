@@ -16,3 +16,4 @@ require 'rest_client' if FBMESSENGER
 require 'RMagick'
 include Magick
 require './bot/addons/image'
+require 'pg' if  DATABASE

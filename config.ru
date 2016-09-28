@@ -8,6 +8,10 @@ use Rack::Cors do
 end
 
 Bot.log=Bot::Log.new()
+if DATABASE then
+	Bot.log.info "Loading database"
+	Bot.db = Bot::Db.new()
+end
 Bot::Navigation.load_addons()
 Bot.nav=Bot::Navigation.new()
 bots=[]
@@ -18,6 +22,6 @@ end
 if FBMESSENGER then
 	Giskard::FBMessengerBot.init()
 	bots.push(Giskard::FBMessengerBot)
-end	
+end
 
 run Rack::Cascade.new bots
