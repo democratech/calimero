@@ -35,30 +35,34 @@ module Bot
 			    Bot.log.debug @@db.server_version
 			rescue PG::Error => e
 			    Bot.log.error e.message
-			ensure
-			    @@db.close if @@db
 			end
 		end
 
-		def self.is_connected
-			return unless defined? DBNAME
+		def is_connected?
+			return DATABASE
 		end
 
-		def self.load_queries
+		def load_queries
 			Bot::Users.load_queries
 		end
 
-		def self.prepare(name,query)
+		def prepare(name,query)
+			Bot.log.debug "#{__method__}: #{name} / query: #{query}"
 			@@queries[name]=query
 		end
 
-		def self.close
+		def close
 			@@db.close() unless @@db.nil?
 		end
 
-		def self.query(name,params)
+		def query(name,params = [])
 			Bot.log.info "#{__method__}: #{name} / values: #{params}"
-			return @@db.exec_params(@@queries[name],params)
+			Bot.log.info @@queries
+			if params.empty?
+				return @@db.exec(@@queries[name])
+			else
+				return @@db.exec_params(@@queries[name],params)
+			end
 		end
 	end
 end

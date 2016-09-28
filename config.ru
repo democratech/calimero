@@ -9,8 +9,7 @@ end
 
 Bot.log=Bot::Log.new()
 if DATABASE then
-	Bot.log.info "Loading database"
-	Bot.db = Bot::Db.new()
+	Bot.db=Bot::Db.new()
 end
 Bot::Navigation.load_addons()
 Bot.nav=Bot::Navigation.new()

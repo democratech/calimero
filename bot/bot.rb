@@ -18,7 +18,7 @@
 
 module Bot
 	class << self
-		attr_accessor :nav, :log
+		attr_accessor :nav, :log, :db
 	end
 
 	@@emoticons={ # see http://unicode.org/emoji/charts/full-emoji-list.html
@@ -117,7 +117,7 @@ END
 		}
 	}
 
-	
+
 	def self.mergeHash(old_path,new_path)
 		return old_path.merge(new_path) do |key,oldval,newval|
 			if oldval.class.to_s=="Hash" then

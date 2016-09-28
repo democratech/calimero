@@ -23,18 +23,20 @@ module Bot
 	class Users
 		def self.load_queries
 			queries={
-				"users_select" => "SELECT * FROM users",
-				"users_insert"  => "INSERT INTO users (firstname, lastname, email) VALUES (?,?,?)"
+				"users_select" => "SELECT * FROM #{DB_PREFIX}users",
+				"users_insert"  => "INSERT INTO #{DB_PREFIX}users (first_name, last_name, email) VALUES (?,?,?)"
 			}
-			queries.each { |k,v| Bot::Db.prepare(k,v) }
+			queries.each { |k,v| Bot.db.prepare(k,v) }
 		end
 
 
 		def initialize()
 			@users={}
 			# load results from database
-			if Bot::Db.is_connected then
-				results = Bot::Db.query("users_select")
+			if Bot.db.is_connected? then
+				Users::load_queries
+				Bot.log.info "loading users"
+				results = Bot.db.query("users_select")
 				results.each do |row|
 				  user     	  	 = Bot::User.new()
 				  user.firstname = row['firstname']

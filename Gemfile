@@ -7,4 +7,4 @@ gem 'unicorn', '4.7.0'
 gem 'rack-cors'
 gem 'rest-client'
 gem 'rmagick'
-
+gem 'pg'
