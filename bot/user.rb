@@ -22,7 +22,8 @@
 module Bot
 	class User
 		# general attr
-		attr_accessor :id                # id of the user
+		attr_accessor :id                # id of the user in the database
+		attr_accessor :tg_id
 		attr_accessor :first_name
 		attr_accessor :last_name
 		attr_accessor :username
@@ -36,6 +37,13 @@ module Bot
 		attr_accessor :state
 		attr_accessor :previous_state
 		attr_accessor :previous_screen
+
+		# Facebook
+		attr_accessor :fb_id
+		attr_accessor :profile_pic
+		attr_accessor :timezone
+		attr_accessor :locale
+		attr_accessor :gender
 
 
 		def initialize()

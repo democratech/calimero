@@ -26,6 +26,20 @@ module Giskard
 			attr_accessor :client
 		end
 
+		def self.add(user)
+			return user
+		end
+
+		def self.create(user)
+			Bot.log.debug("Nouveau participant : #{user.first_name} #{user.last_name} (<https://telegram.me/#{user.user_name}|@#{user.user_name}>)")
+			return user
+		end
+
+		def self.load(user)
+			return user
+		end
+
+
 		helpers do
 			def authorized
 				headers['Secret-Key']==TG_SECRET
@@ -68,7 +82,7 @@ module Giskard
 				if options[:keep_kbd] then
 					options.delete(:keep_kbd)
 				else
-					kbd = options[:kbd].nil? ? Telegram::Bot::Types::ReplyKeyboardHide.new(hide_keyboard: true) : options[:kbd] 
+					kbd = options[:kbd].nil? ? Telegram::Bot::Types::ReplyKeyboardHide.new(hide_keyboard: true) : options[:kbd]
 				end
 				lines=msg[:text].split("\n")
 				buffer=""
@@ -92,7 +106,7 @@ module Giskard
 						if not img_url.match(/http/).nil? then
 							img='static/tmp/image'+File.extname(img_url)
 							File.open(img, 'wb') do |fo|
-								fo.write open(img_url).read 
+								fo.write open(img_url).read
 							end
 							img_url=img
 						end

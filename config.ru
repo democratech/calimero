@@ -11,16 +11,22 @@ Bot.log=Bot::Log.new()
 if DATABASE then
 	Bot.db=Bot::Db.new()
 end
-Bot::Navigation.load_addons()
-Bot.nav=Bot::Navigation.new()
-bots=[]
+Bot.bots={}
 if TELEGRAM then
 	Giskard::TelegramBot.client=Telegram::Bot::Client.new(TG_TOKEN)
-	bots.push(Giskard::TelegramBot)
+	Bot.bots[TELEGRAM] = Giskard::TelegramBot
 end
 if FBMESSENGER then
 	Giskard::FBMessengerBot.init()
-	bots.push(Giskard::FBMessengerBot)
+	Bot.bots[FBMESSENGER] = Giskard::FBMessengerBot
 end
 
-run Rack::Cascade.new bots
+Bot.log.debug Bot.bots
+Bot.bots.each do |key,bot|
+	Bot.log.debug bot
+end
+
+Bot::Navigation.load_addons()
+Bot.nav=Bot::Navigation.new()
+
+run Rack::Cascade.new Bot.bots

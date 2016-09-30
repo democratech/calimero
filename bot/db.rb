@@ -32,7 +32,6 @@ module Bot
 					"host"=>DBHOST,
 					"port"=>DBPORT
 				)
-			    Bot.log.debug @@db.server_version
 			rescue PG::Error => e
 			    Bot.log.error e.message
 			end
@@ -42,12 +41,12 @@ module Bot
 			return DATABASE
 		end
 
-		def load_queries
+		def self.load_queries
 			Bot::Users.load_queries
 		end
 
 		def prepare(name,query)
-			Bot.log.debug "#{__method__}: #{name} / query: #{query}"
+			#Bot.log.debug "#{__method__}: #{name} / query: #{query}"
 			@@queries[name]=query
 		end
 
@@ -57,7 +56,7 @@ module Bot
 
 		def query(name,params = [])
 			Bot.log.info "#{__method__}: #{name} / values: #{params}"
-			Bot.log.info @@queries
+			#Bot.log.info @@queries
 			if params.empty?
 				return @@db.exec(@@queries[name])
 			else

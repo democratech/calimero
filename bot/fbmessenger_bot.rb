@@ -43,6 +43,60 @@ module Giskard
 		def self.init()
 			payload={ "setting_type"=>"greeting", "greeting"=>{ "text"=>"Hello, ca fiouze ?" }}
 			Giskard::FBMessengerBot.send(payload,"thread_settings")
+			Giskard::FBMessengerBot.load_queries
+		end
+
+		def self.load_queries
+			queries={
+				"fb_select" => "SELECT * FROM #{DB_PREFIX}fb_users WHERE usr_id = $1",
+				"fb_insert"  => "INSERT INTO #{DB_PREFIX}fb_users (id, usr_id, profile_pic, locale, timezone, gender) VALUES (?, ?,?,?,?,?)"
+			}
+			queries.each { |k,v| Bot.db.prepare(k,v) }
+		end
+
+		def self.add(user)
+			if Bot.db.is_connected? then
+				params = [
+ 					user.id,
+					user.fb_id,
+					user.profile_pic,
+					user.gender,
+					user.locale,
+					user.timezone
+				]
+				Bot.db.query("fb_insert", params)
+			end
+			return user
+		end
+
+		def self.load(user)
+			if Bot.db.is_connected? then
+				params = [user.id]
+				r = Bot.db.query("fb_select", params)
+				r.each do |row|
+					row = r[0]
+					user.gender 	  = row['gender']
+					user.profile_pic  = row['profile_pic']
+					user.locale 	  = row['locale']
+					user.timezone  	  = row['timezone']
+					user.fb_id	      = row['id']
+				end
+			end
+			return user
+		end
+
+		def self.create(user)
+			res              = URI.parse("https://graph.facebook.com/v2.6/#{user.id}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=#{FB_PAGEACCTOKEN}").read
+			r_user           = JSON.parse(res)
+			r_user           = JSON.parse(JSON.dump(r_user), object_class: OpenStruct)
+			user.first_name  = r_user.first_name
+			user.last_name   = r_user.last_name
+			user.gender		 = r_user.gender # TODO: translate in m or w
+			user.timezone	 = r_user.timezone
+			user.locale		 = r_user.locale
+			user.profile_pic = r_user.profile_pic
+			Bot.log.debug("Nouveau participant : #{user.first_name} #{user.last_name}")
+			return user
 		end
 
 		helpers do

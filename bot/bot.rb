@@ -18,7 +18,7 @@
 
 module Bot
 	class << self
-		attr_accessor :nav, :log, :db
+		attr_accessor :nav, :log, :db, :bots
 	end
 
 	@@emoticons={ # see http://unicode.org/emoji/charts/full-emoji-list.html

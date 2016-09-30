@@ -24,44 +24,46 @@ module Bot
 		def self.load_queries
 			queries={
 				"users_select" => "SELECT * FROM #{DB_PREFIX}users",
-				"users_insert"  => "INSERT INTO #{DB_PREFIX}users (first_name, last_name, email) VALUES (?,?,?)"
+				"users_insert"  => "INSERT INTO #{DB_PREFIX}users (first_name, last_name, email) VALUES (?,?,?) returning id"
 			}
 			queries.each { |k,v| Bot.db.prepare(k,v) }
 		end
 
 
 		def initialize()
-			@users=[]
-			# load results from database
+			@users={}
+			# load all users from database
 			if Bot.db.is_connected? then
 				Users::load_queries
 				Bot.log.info "loading users"
 				results = Bot.db.query("users_select")
 				results.each do |row|
-				  user     	  	 = Bot::User.new()
+				  user     	  	  = Bot::User.new()
+				  user.id 		  = row['id']
 				  user.first_name = row['first_name']
 				  user.last_name  = row['last_name']
-				  user.mail 	 = row['email']
-				  @users << user
+				  user.mail 	  = row['email']
+				  Bot.bots.each do |key,bot|
+					  user 		  = bot.load(user)
+				  end
+				  @users[user.id] = user
 				  Bot.log.info user
 				end
 			end
 		end
 
 		def add(user)
-			## WARNING ##
-			# This is for example purpose only and will work with only 1 unicorn process.
-			# If you use more than 1 unicorn process, you should save users in shared memory or a database to ensure data consistency between unicorn processes.
-
-			if Bot::Db.is_connected then
-				params = {
-					'first_name' => user.first_name,
-					'last_name' => user.last_name,
-					'email' => user.mail
-				 }
-				Bot::Db.query("users_insert", params)
+			if Bot.db.is_connected? then
+				params = [
+					user.first_name,
+					user.last_name,
+					user.mail
+				]
+				res = Bot.db.query("users_insert", params)
+				user.id = res[0]['id']
+				return Bot.bots[user.bot].add(user)
 			end
-			return
+			return user
 		end
 
 		# given a User instance with a Bot name and an ID, we look into the database to load missing informations, or to create it in the database
@@ -71,23 +73,13 @@ module Bot
 				:target=> user.id
 			})
 			if res.nil? then # new user
-				case user.bot #FIXME: this should be inside bot
-				when TG_BOT_NAME then
-					Bot.log.debug("Nouveau participant : #{user.first_name} #{user.last_name} (<https://telegram.me/#{user.username}|@#{user.username}>)")
-				when FB_BOT_NAME then
-					res              = URI.parse("https://graph.facebook.com/v2.6/#{user.id}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=#{FB_PAGEACCTOKEN}").read
-					r_user           = JSON.parse(res)
-					r_user           = JSON.parse(JSON.dump(r_user), object_class: OpenStruct)
-					user.first_name  = r_user.first_name
-					user.last_name   = r_user.last_name
-					Bot.log.debug("Nouveau participant : #{user.first_name} #{user.last_name}")
-				end
+				Bot.bots[user.bot].create(user)
 				self.add(user)
 			else
 				user = res.clone
 			end
 			@users[user.id]=user
-			return user # we have to return the user because Ruby has no native deep copy
+			return user
 		end
 
 		def close(user)

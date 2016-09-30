@@ -15,6 +15,34 @@ CREATE TABLE users (
 );
 
 
+CREATE DOMAIN gender AS varchar(1)
+CHECK(
+   VALUE IN (NULL, 'm', 'w')
+);
+
+CREATE TABLE fb_users (
+    id integer primary key,
+    usr_id integer not null,
+    profile_pic character varying(30),
+    locale character varying(30),
+    timezone text,
+    gender gender,
+    foreign key (usr_id)
+        references users(id)
+        on delete Cascade
+        on update cascade
+);
+
+
+CREATE TABLE tg_users (
+    id integer primary key,
+    usr_id integer not null,
+    user_name character varying(30),
+    foreign key (usr_id)
+        references users(id)
+        on delete Cascade
+        on update cascade
+);
 
 CREATE TABLE images(
     id CHAR(8) PRIMARY KEY,
@@ -39,11 +67,11 @@ foreign key (img_id)
 );
 
 -- TODO
-delimiter //
-CREATE trigger updateLastDate
-after insert on doleances
-begin
-for each row
-update users set last_date = now() where id = new.usr_id;
-end;//
-delimiter ;
+-- delimiter //
+-- CREATE trigger updateLastDate
+-- after insert on doleances
+-- begin
+-- for each row
+-- update users set last_date = now() where id = new.usr_id;
+-- end;//
+-- delimiter ;
