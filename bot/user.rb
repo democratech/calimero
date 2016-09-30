@@ -45,6 +45,8 @@ module Bot
 		attr_accessor :locale
 		attr_accessor :gender
 
+		# Telegram
+		attr_accessor :tg_id
 
 		def initialize()
 			self.initialize_fsm()
@@ -53,6 +55,9 @@ module Bot
 				'actions'=>{ 'first_help_given'=>false },
 				'locale'=>'fr'
 			}
+			@id = -1
+			@fb_id = -1
+			@tg_id = -1
 		end
 
 		def reset()

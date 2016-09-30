@@ -98,7 +98,7 @@ module Bot
 		# @user is a class User. It is the sender. It should have an id
 		# return the next screen
 		def get(msg, user)
-			Bot.log.debug "Read message from user #{user.id} to bot #{msg.bot} with seq #{msg.seq}: #{msg.text}"
+			Bot.log.debug "Read message: #{msg.text}"
 
 			# load user if registered
 			user = @users.open(user)

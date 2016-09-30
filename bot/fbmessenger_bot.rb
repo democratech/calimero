@@ -48,8 +48,9 @@ module Giskard
 
 		def self.load_queries
 			queries={
-				"fb_select" => "SELECT * FROM #{DB_PREFIX}fb_users WHERE usr_id = $1",
-				"fb_insert"  => "INSERT INTO #{DB_PREFIX}fb_users (id, usr_id, profile_pic, locale, timezone, gender) VALUES (?, ?,?,?,?,?)"
+				"fb_select_usr_id" => "SELECT * FROM #{DB_PREFIX}fb_users WHERE usr_id = $1",
+				"fb_select_id" => "SELECT * FROM #{DB_PREFIX}fb_users WHERE id = $1",
+				"fb_insert"  => "INSERT INTO #{DB_PREFIX}fb_users (id, usr_id, profile_pic, locale, timezone, gender) VALUES ($1, $2, $3, $4, $5, $6)"
 			}
 			queries.each { |k,v| Bot.db.prepare(k,v) }
 		end
@@ -57,8 +58,8 @@ module Giskard
 		def self.add(user)
 			if Bot.db.is_connected? then
 				params = [
- 					user.id,
 					user.fb_id,
+					user.id,
 					user.profile_pic,
 					user.gender,
 					user.locale,
@@ -71,27 +72,29 @@ module Giskard
 
 		def self.load(user)
 			if Bot.db.is_connected? then
-				params = [user.id]
-				r = Bot.db.query("fb_select", params)
+				params = user.id !=  -1 ? [user.id] : [user.fb_id]
+				req    = user.id !=  -1 ? "fb_select_usr_id" : "fb_select_id"
+				r = Bot.db.query(req, params)
 				r.each do |row|
-					row = r[0]
 					user.gender 	  = row['gender']
 					user.profile_pic  = row['profile_pic']
 					user.locale 	  = row['locale']
 					user.timezone  	  = row['timezone']
 					user.fb_id	      = row['id']
+					user.id	     	  = row['usr_id']
+					break
 				end
 			end
 			return user
 		end
 
 		def self.create(user)
-			res              = URI.parse("https://graph.facebook.com/v2.6/#{user.id}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=#{FB_PAGEACCTOKEN}").read
+			res              = URI.parse("https://graph.facebook.com/v2.6/#{user.fb_id}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=#{FB_PAGEACCTOKEN}").read
 			r_user           = JSON.parse(res)
 			r_user           = JSON.parse(JSON.dump(r_user), object_class: OpenStruct)
 			user.first_name  = r_user.first_name
 			user.last_name   = r_user.last_name
-			user.gender		 = r_user.gender # TODO: translate in m or w
+			user.gender		 = (r_user.gender == "male")? 'm': "f"
 			user.timezone	 = r_user.timezone
 			user.locale		 = r_user.locale
 			user.profile_pic = r_user.profile_pic
@@ -197,6 +200,7 @@ module Giskard
 
 		# challenge for creating a webhook
 		get '/fbmessenger' do
+			Bot.log.info "#{__method__} challenge"
 			if params['hub.verify_token']==FB_SECRET then
 				return params['hub.challenge'].to_i
 			else
@@ -220,24 +224,24 @@ module Giskard
 						text      = messaging.postback.payload
 					end
 					user     = Bot::User.new()
-					user.id  = id_sender
-					user.bot = FB_BOT_NAME
+					user.fb_id  = id_sender
+					user.bot = FBMESSENGER
 
 					if not text.nil? then
 						# read message
-						msg           = Giskard::Message.new(id, text, id, FB_BOT_NAME)
+						msg           = Giskard::Message.new(id, text, id, FBMESSENGER)
 						msg.timestamp = timestamp
 						screen        = Bot.nav.get(msg, user)
 
 						# send answer
-						process_msg(user.id,screen[:text],screen) unless screen[:text].nil?
+						process_msg(user.fb_id,screen[:text],screen) unless screen[:text].nil?
 						if not screen[:elements].nil?
-							send_elements(user.id, screen[:elements])
+							send_elements(user.fb_id, screen[:elements])
 						end
 						# TODO send WebView
 						Bot.log.info screen
 						if not screen[:attachment].nil?
-							send_attachment(user.id, screen[:attachment])
+							send_attachment(user.fb_id, screen[:attachment])
 						end
 					end
 				end

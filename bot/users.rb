@@ -23,8 +23,8 @@ module Bot
 	class Users
 		def self.load_queries
 			queries={
-				"users_select" => "SELECT * FROM #{DB_PREFIX}users",
-				"users_insert"  => "INSERT INTO #{DB_PREFIX}users (first_name, last_name, email) VALUES (?,?,?) returning id"
+				"users_select" => "SELECT * FROM #{DB_PREFIX}users where id=$1",
+				"users_insert"  => "INSERT INTO #{DB_PREFIX}users (first_name, last_name, email) VALUES ($1, $2, $3) returning id"
 			}
 			queries.each { |k,v| Bot.db.prepare(k,v) }
 		end
@@ -32,23 +32,8 @@ module Bot
 
 		def initialize()
 			@users={}
-			# load all users from database
 			if Bot.db.is_connected? then
 				Users::load_queries
-				Bot.log.info "loading users"
-				results = Bot.db.query("users_select")
-				results.each do |row|
-				  user     	  	  = Bot::User.new()
-				  user.id 		  = row['id']
-				  user.first_name = row['first_name']
-				  user.last_name  = row['last_name']
-				  user.mail 	  = row['email']
-				  Bot.bots.each do |key,bot|
-					  user 		  = bot.load(user)
-				  end
-				  @users[user.id] = user
-				  Bot.log.info user
-				end
 			end
 		end
 
@@ -68,10 +53,8 @@ module Bot
 
 		# given a User instance with a Bot name and an ID, we look into the database to load missing informations, or to create it in the database
 		def open(user)
-			res=self.search({
-				:by=>"user_id",
-				:target=> user.id
-			})
+			res=self.search(user)
+
 			if res.nil? then # new user
 				Bot.bots[user.bot].create(user)
 				self.add(user)
@@ -86,8 +69,43 @@ module Bot
 			user.close()
 		end
 
-		def search(query)
-			return @users[query[:target]]
+		def search(user)
+			if @users.key?(user.id) then
+				return @users[user.id]
+
+			elsif Bot.db.is_connected? then
+				if user.fb_id != -1 then
+					user = Bot.bots[FBMESSENGER].load(user)
+				end
+				if user.tg_id != -1 then
+					user = Bot.bots[TELEGRAM].load(user)
+				end
+				if user.id != -1 then
+					user = Bot::Users.load(user)
+					# we add this user in our hash to load it directly next time
+					@users[user.id] = user
+					return user
+				end
+			end
+			return nil
 		end
+
+		def self.load(user)
+			results = Bot.db.query("users_select", [user.id])
+			results.each do |row|
+			  user.first_name = row['first_name']
+			  user.last_name  = row['last_name']
+			  user.mail 	  = row['email']
+			  if user.fb_id   == -1 then
+				  res = Bot.bots[FBMESSENGER].load(user)
+			  end
+			  if user.tg_id == -1 then
+				  res = Bot.bots[TELEGRAM].load(user)
+			  end
+		    end
+			return user
+		end
+
+		# ----------------------------------------------------------------------
 	end
 end

@@ -17,15 +17,15 @@ CREATE TABLE users (
 
 CREATE DOMAIN gender AS varchar(1)
 CHECK(
-   VALUE IN (NULL, 'm', 'w')
+   VALUE IN (NULL, 'm', 'f')
 );
 
 CREATE TABLE fb_users (
-    id integer primary key,
+    id bigint primary key,
     usr_id integer not null,
-    profile_pic character varying(30),
+    profile_pic text,
     locale character varying(30),
-    timezone text,
+    timezone varchar(8),
     gender gender,
     foreign key (usr_id)
         references users(id)

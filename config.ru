@@ -21,12 +21,8 @@ if FBMESSENGER then
 	Bot.bots[FBMESSENGER] = Giskard::FBMessengerBot
 end
 
-Bot.log.debug Bot.bots
-Bot.bots.each do |key,bot|
-	Bot.log.debug bot
-end
 
 Bot::Navigation.load_addons()
 Bot.nav=Bot::Navigation.new()
 
-run Rack::Cascade.new Bot.bots
+run Rack::Cascade.new Bot.bots.values
