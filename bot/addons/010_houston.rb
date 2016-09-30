@@ -20,8 +20,19 @@ $HOUSTON_TEXT_LIM = 200
 
 
 module Houston
+	def self.load_queries
+		queries={
+			"houston_select_dol" => "SELECT * FROM #{DB_PREFIX}doleances where usr_id=$1",
+			"houston_select_img" => "SELECT * FROM #{DB_PREFIX}images where id=$1",
+			"houston_insert"  => "INSERT INTO #{DB_PREFIX}doleances (usr_id, msg, img_id) VALUES ($1, $2, $3) returning id"
+		}
+		queries.each { |k,v| Bot.db.prepare(k,v) }
+	end
+
+
 	def self.included(base)
 		Bot.log.info "loading Houston add-on"
+		Houston.load_queries
 		messages={
 			:en=>{
 				:houston=>{

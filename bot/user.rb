@@ -70,7 +70,8 @@ module Bot
 		# -----------------------------------
 		def initialize_fsm()
 			@state = {
-				'last_msg_id'     => nil,
+				'last_msg_id'     => -1,
+				'last_msg_time'   => -1,
 				'current'         => nil,
 				'expected_input'  => "answer",
 				'expected_size'   => -1,
@@ -90,8 +91,9 @@ module Bot
 		def already_answered(msg)
 			return false if msg.seq ==-1 # external command
 			Bot.log.debug "Last msg id: #{@state['last_msg_id']} and current id: #{msg.seq}"
-			return true if not @state['last_msg_id'].nil? and @state['last_msg_id'].to_i>msg.seq.to_i
-			@state['last_msg_id'] = msg.seq.to_i
+			return true if not @state['last_msg_id'].nil? and
+			@state['last_msg_time'].to_i < msg.timestamp.to_i
+			@state['last_msg_time'] = msg.time.to_i
 			return false
 		end
 
