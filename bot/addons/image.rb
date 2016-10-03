@@ -67,23 +67,26 @@ def create_image(title, name, input, output)
     if line > lineMax
         puts "Le texte est trop long (#{line} > #{lineMax})"
     end
+
+    size2 = [30, size - 5].min
+
+    # white undercolor
+    gc = Magick::Draw.new
+    gc.fill = "#00000060"
+    y = h/2 - line*size - size2 + 20
+    gc.rectangle 0, y, w, size*line + size2 + 30 + y
+    gc.draw(canvas)
+
     txt = Magick::Draw.new
     txt.font_family   = "Georgia"
     txt.fill          = "#FFFFFF"
     txt.pointsize     = size
     txt.gravity       = Magick::CenterGravity
     canvas.annotate(txt, w, h, 0, -size/2, title)
-    size2 = [30, size - 5].min
     txt.pointsize     = size2
     canvas.annotate(txt, w, h, 0, size/2+10, name)
 
-    # white undercolor
-    gc = Magick::Draw.new
-    gc.fill = "#FFFFFF60"
-    y = h/2 - line*size - size2 + 20
-    puts y
-    gc.rectangle 0, y, w, size*line + size2 + 30 + y
-    gc.draw(canvas)
+
 
     canvas.write(output)
 end

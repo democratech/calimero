@@ -23,7 +23,7 @@ module Houston
 	def self.load_queries
 		queries={
 			"houston_select_dol_perso" => "SELECT * FROM #{DB_PREFIX}messages where usr_id=$1",
-			"houston_select_dol_last" => "SELECT msg, url, first_name, date, usr_id FROM  #{DB_PREFIX}messages JOIN  #{DB_PREFIX}images ON #{DB_PREFIX}images.id = #{DB_PREFIX}messages.img_id JOIN #{DB_PREFIX}users on #{DB_PREFIX}users.id = usr_id order by #{DB_PREFIX}messages.date desc limit 5",
+			"houston_select_dol_last" => "SELECT msg, url, first_name, date, usr_id FROM  #{DB_PREFIX}messages JOIN  #{DB_PREFIX}images ON #{DB_PREFIX}images.id = #{DB_PREFIX}messages.img_id JOIN #{DB_PREFIX}users on #{DB_PREFIX}users.id = usr_id order by #{DB_PREFIX}messages.date desc limit 3",
 			"houston_select_cat" => "SELECT * FROM #{DB_PREFIX}categories limit 3",
 			"houston_insert"  => "INSERT INTO #{DB_PREFIX}messages (usr_id, msg, img_id) VALUES ($1, $2, $3) returning date",
 			"houston_select_img"  => "SELECT * FROM #{DB_PREFIX}images WHERE category = $1 order by random() limit 1",
@@ -95,7 +95,7 @@ END
 Que voulez-vous faire ?
 Utilisez les boutons du menu ci-dessous pour m'indiquer ce que vous souhaitez faire.
 END
-					:delivery => "Et voila !\n",
+					:delivery => "Et voilà !\n",
 					:too_long => <<-END,
 La limite de caractères est de #{$HOUSTON_TEXT_LIM}. Merci de recommencer.
 END
@@ -184,20 +184,28 @@ END
 		#screen=self.find_by_name("houston/carousel",self.get_locale(user))
 		screen[:elements]= [
 			{
-				:title 		=> "Ecrivez votre doleance",
+				:title 		=> "Ecrivez votre doléance",
 				:image_url  => "http://guhur.net/img/megaphone.png",
-			} ]
-		results = Bot.db.query("houston_select_dol_last")
-		results.each do |row|
-			output = "img/#{row['date']}_#{row['usr_id']}.jpg"
-			if not File.file?(output) then
-				image_name = create_image(row['msg'], row['first_name'], row['url'], output)
-			end
-		  	screen[:elements] << {
-			  "title" 		=> row['msg'],
-			  "image_url"  => output
-		  	}
-		end
+			},
+			{
+				:title 		=> "Exemple",
+				:image_url  => "http://guhur.net/img/demo1.jpg",
+			},
+			{
+				:title 		=> "Exemple",
+				:image_url  => "http://guhur.net/img/demo2.jpg",
+			}  ]
+		# results = Bot.db.query("houston_select_dol_last")
+		# results.each do |row|
+		# 	output = "img/#{row['date']}_#{row['usr_id']}.jpg"
+		# 	if not File.file?(output) then
+		# 		image_name = create_image(row['msg'], row['first_name'], row['url'], output)
+		# 	end
+		#   	screen[:elements] << {
+		# 	  "title" 		=> row['msg'],
+		# 	  "image_url"  => output
+		#   	}
+		# end
 		user.next_answer('free_text',1,"houston_save_grievance")
 		return self.get_screen(screen,user,msg)
 	end
@@ -260,7 +268,7 @@ END
 		      "type"			=> "template",
 		      "payload" 		=> {
 		        "template_type"		=> "button",
-		        "text"				=> "A quel theme pouvez-vous l'associer ?",
+		        "text"				=> "A quel thème pouvez-vous l'associer ?",
 		        "buttons"			=> themes
 		      }
 		  }
@@ -288,7 +296,7 @@ END
 		# FIXME send
 		bash_command = 'curl -F filedata=@%s -F recipient=\'{"id":"%s"}\' \
 		 			-F message=\'{"attachment":{"type":"image", "payload":{}}}\' \
-					https://graph.facebook.com/v2.7/me/messages?access_token=%s' % [output, usr.id, FB_PAGEACCTOKEN]
+					https://graph.facebook.com/v2.7/me/messages?access_token=%s' % [output, usr.fb_id, FB_PAGEACCTOKEN]
 		command_result = `#{bash_command}`
 		screen=self.find_by_name("houston/delivery",self.get_locale(usr))
 		Bot.log.info screen
