@@ -44,18 +44,39 @@ CREATE TABLE tg_users (
         on update cascade
 );
 
-CREATE TABLE images(
-    id CHAR(8) PRIMARY KEY,
-    url VARCHAR(200)
+
+CREATE TABLE categories(
+    id serial PRIMARY KEY,
+    name VARCHAR(20),
+    parent integer,
+    foreign key (parent)
+        references categories(id)
+        on delete set null
+        on update cascade
 );
 
 
-CREATE TABLE doleances(
+CREATE TABLE images(
+    id serial PRIMARY KEY,
+    url VARCHAR(200),
+    category integer,
+    foreign key (category)
+            references categories(id)
+            on delete Cascade
+            on update cascade
+);
+
+
+
+
+
+
+CREATE TABLE messages(
 usr_id integer not null,
 msg varchar(300),
-img_id CHAR(8),
-date timestamp DEFAULT now(),
-primary key (usr_id, msg, img_id),
+img_id integer,
+date timestamp DEFAULT current_timestamp,
+primary key (usr_id, date),
 foreign key (usr_id)
         references users(id)
         on delete Cascade

@@ -122,18 +122,16 @@ module Bot
 			# end
 
 			# reset
-			return self.get_reset(msg, user) if self.is_reset(msg.text)
+			@users.save(user) and return self.get_reset(msg, user) if self.is_reset(msg.text)
 
 			# we expect the user to have used the proposed keyboard to answer
-			return self.get_button_answer(msg, user) if _input == 'answer'
+			@users.save(user) and return self.get_button_answer(msg, user) if _input == 'answer'
 
 			# we expect the user to have answered by typing text manually
-			return self.get_text_answer(msg, user) if _input=='free_text' and self.respond_to?(_callback) and user.state['expected_size']>0
+			@users.save(user) and return  self.get_text_answer(msg, user) if _input=='free_text' and self.respond_to?(_callback) and user.state['expected_size']>0
 
 			# we didn't expect this message
-			return self.dont_understand(msg, user)
-
-			@users.close(user)
+			@users.save(user) and return  self.dont_understand(msg, user)
 		end
 
 		def is_reset(text)

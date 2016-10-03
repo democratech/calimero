@@ -213,10 +213,10 @@ module Giskard
 			entries     = params['entry']
 			entries.each do |entry|
 				entry.messaging.each do |messaging|
-					puts messaging
+					Bot.log.debug messaging
 					id_sender = messaging.sender.id
 					id_receiv = messaging.recipient.id
-					timestamp = messaging.time
+					timestamp = messaging.timestamp
 					id 		  = timestamp
 					if not messaging.message.nil? then
 						text      = messaging.message.text
@@ -232,7 +232,7 @@ module Giskard
 						msg           = Giskard::Message.new(id, text, id, FBMESSENGER)
 						msg.timestamp = timestamp
 						screen        = Bot.nav.get(msg, user)
-
+						
 						# send answer
 						process_msg(user.fb_id,screen[:text],screen) unless screen[:text].nil?
 						if not screen[:elements].nil?

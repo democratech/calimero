@@ -32,6 +32,8 @@ module Bot
 		attr_accessor :bot_upgrade
 		attr_accessor :bot
 		attr_accessor :buffer
+		attr_accessor :last_msg_id
+		attr_accessor :last_msg_time
 
 		# FSM
 		attr_accessor :state
@@ -58,6 +60,8 @@ module Bot
 			@id = -1
 			@fb_id = -1
 			@tg_id = -1
+			@last_msg_id = 0
+			@last_msg_time = -1
 		end
 
 		def reset()
@@ -70,8 +74,6 @@ module Bot
 		# -----------------------------------
 		def initialize_fsm()
 			@state = {
-				'last_msg_id'     => -1,
-				'last_msg_time'   => -1,
 				'current'         => nil,
 				'expected_input'  => "answer",
 				'expected_size'   => -1,
@@ -90,11 +92,12 @@ module Bot
 
 		def already_answered(msg)
 			return false if msg.seq ==-1 # external command
-			Bot.log.debug "Last msg id: #{@state['last_msg_id']} and current id: #{msg.seq}"
-			return true if not @state['last_msg_id'].nil? and
-			@state['last_msg_time'].to_i < msg.timestamp.to_i
-			@state['last_msg_time'] = msg.time.to_i
-			return false
+			answered = @last_msg_time > -1 and @last_msg_time < msg.timestamp.to_i
+			@last_msg_time = [@last_msg_time, msg.timestamp].max
+			if answered then
+				Bot.log.debug "Message already answered: #{@last_msg_time} and current time: #{msg.timestamp}"
+			end
+			return answered
 		end
 
 		def previous_state()

@@ -22,9 +22,11 @@ $HOUSTON_TEXT_LIM = 200
 module Houston
 	def self.load_queries
 		queries={
-			"houston_select_dol" => "SELECT * FROM #{DB_PREFIX}doleances where usr_id=$1",
-			"houston_select_img" => "SELECT * FROM #{DB_PREFIX}images where id=$1",
-			"houston_insert"  => "INSERT INTO #{DB_PREFIX}doleances (usr_id, msg, img_id) VALUES ($1, $2, $3) returning id"
+			"houston_select_dol_perso" => "SELECT * FROM #{DB_PREFIX}messages where usr_id=$1",
+			"houston_select_dol_last" => "SELECT msg, url, first_name, date, usr_id FROM  #{DB_PREFIX}messages JOIN  #{DB_PREFIX}images ON #{DB_PREFIX}images.id = #{DB_PREFIX}messages.img_id JOIN #{DB_PREFIX}users on #{DB_PREFIX}users.id = usr_id order by #{DB_PREFIX}messages.date desc limit 5",
+			"houston_select_cat" => "SELECT * FROM #{DB_PREFIX}categories limit 3",
+			"houston_insert"  => "INSERT INTO #{DB_PREFIX}messages (usr_id, msg, img_id) VALUES ($1, $2, $3) returning date",
+			"houston_select_img"  => "SELECT * FROM #{DB_PREFIX}images WHERE category = $1 order by random() limit 1",
 		}
 		queries.each { |k,v| Bot.db.prepare(k,v) }
 	end
@@ -184,16 +186,18 @@ END
 			{
 				:title 		=> "Ecrivez votre doleance",
 				:image_url  => "http://guhur.net/img/megaphone.png",
-			},
-			{
-				"title" 		=> "On a faim",
-				"image_url"  => "http://guhur.net/img/output.jpg"
-			},
-			{
-				"title" 		=> "On a faim",
-				"image_url"  => "http://guhur.net/img/output.jpg"
-			}
-		]
+			} ]
+		results = Bot.db.query("houston_select_dol_last")
+		results.each do |row|
+			output = "img/#{row['date']}_#{row['usr_id']}.jpg"
+			if not File.file?(output) then
+				image_name = create_image(row['msg'], row['first_name'], row['url'], output)
+			end
+		  	screen[:elements] << {
+			  "title" 		=> row['msg'],
+			  "image_url"  => output
+		  	}
+		end
 		user.next_answer('free_text',1,"houston_save_grievance")
 		return self.get_screen(screen,user,msg)
 	end
@@ -233,8 +237,6 @@ END
 			screen=self.find_by_name("houston/ask_themes",self.get_locale(user))
 		end
 		Bot.log.info "#{__method__}: #{txt}"
-		#Bot::Db.query("save_grievance", txt, user.id, theme)
-		#user.next_answer('free_text',1,"houston_save_txt")
 		return self.get_screen(screen,user,msg)
 	end
 
@@ -245,22 +247,21 @@ END
 
 	def houston_ask_themes(msg,user,screen)
 		Bot.log.info "#{__method__}"
-		# TODO get themes from database
+		themes= []
+		results = Bot.db.query("houston_select_cat")
+		results.each do |row|
+			themes << {
+				"type"				=> "postback",
+				"title"				=> row['name'],
+				"payload"			=> row['id']
+			  }
+		end
 		screen[:attachment] = {
 		      "type"			=> "template",
 		      "payload" 		=> {
 		        "template_type"		=> "button",
 		        "text"				=> "A quel theme pouvez-vous l'associer ?",
-		        "buttons"			=> [{
-		            "type"				=> "postback",
-		            "title"				=> "Societe",
-		            "payload"			=> "societe"
-		          },
-				  {
-					  "type" 					=> "postback",
-					  "title"					=> "Environnement",
-					  "payload"				=> "environnement"
-				  }]
+		        "buttons"			=> themes
 		      }
 		  }
 		user.next_answer('free_text',1,"houston_save_themes")
@@ -269,21 +270,28 @@ END
 	end
 
 	def houston_save_themes(msg, usr, screen)
-		# TODO save themes and grievances inside the database
 		theme = usr.state['buffer']
 
-		# create image
-		image_url = "https://s3.eu-central-1.amazonaws.com/laprimaire/themes/environnement.jpg"
-		output = "output.jpg"
-		image_name = create_image(usr.buffer, usr.first_name, image_url, output)
+		# check theme id and save it
+		results = Bot.db.query("houston_select_img", [theme])
+		if results[0].empty? then
+			screen=self.find_by_name("houston/ask_themes",self.get_locale(usr))
+			return screen
+		end
+		r = Bot.db.query("houston_insert", [usr.id, usr.buffer, results[0]['id']])
+		date = Time.parse(r[0]['date']).to_i
+		output = "img/#{date}_#{usr.id}.jpg"
+		if not File.file?(output) then
+			image_name = create_image(usr.buffer, usr.first_name, results[0]['url'], output)
+		end
 
 		# FIXME send
 		bash_command = 'curl -F filedata=@%s -F recipient=\'{"id":"%s"}\' \
 		 			-F message=\'{"attachment":{"type":"image", "payload":{}}}\' \
 					https://graph.facebook.com/v2.7/me/messages?access_token=%s' % [output, usr.id, FB_PAGEACCTOKEN]
 		command_result = `#{bash_command}`
-		Bot.log.info bash_command
 		screen=self.find_by_name("houston/delivery",self.get_locale(usr))
+		Bot.log.info screen
 		return screen
 	end
 

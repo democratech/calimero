@@ -17,3 +17,4 @@ require 'RMagick'
 include Magick
 require './bot/addons/image'
 require 'pg' if  DATABASE
+require 'time'

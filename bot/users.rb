@@ -32,6 +32,7 @@ module Bot
 
 		def initialize()
 			@users={}
+			@fb_users={}
 			if Bot.db.is_connected? then
 				Users::load_queries
 			end
@@ -61,7 +62,6 @@ module Bot
 			else
 				user = res.clone
 			end
-			@users[user.id]=user
 			return user
 		end
 
@@ -69,9 +69,19 @@ module Bot
 			user.close()
 		end
 
+		def save(user)
+			@users[user.id] = user
+			if FBMESSENGER then
+				@fb_users[user.fb_id] = user
+			end
+		end
+
 		def search(user)
+			Bot.log.debug "user with id #{user.fb_id}"
 			if @users.key?(user.id) then
 				return @users[user.id]
+			elsif FBMESSENGER and @fb_users.key?(user.fb_id) then
+				return @fb_users[user.fb_id]
 
 			elsif Bot.db.is_connected? then
 				if user.fb_id != -1 then
@@ -84,6 +94,9 @@ module Bot
 					user = Bot::Users.load(user)
 					# we add this user in our hash to load it directly next time
 					@users[user.id] = user
+					if FBMESSENGER then
+						@fb_users[user.fb_id] = user
+					end
 					return user
 				end
 			end
