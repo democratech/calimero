@@ -39,7 +39,6 @@ module Bot
 		:finger_up=>"\u{261D}",
 		:french_flag=>"\u{1F1EB}",
 		:finger_right=>"\u{1F449}",
-		:finger_up=>"\u{261D}",
 		:raising_hand=>"\u{1F64B}",
 		:home=>"\u{1F3E0}",
 		:thumbs_up=>"\u{1F44D}",
