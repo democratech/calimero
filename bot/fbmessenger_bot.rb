@@ -89,7 +89,7 @@ module Giskard
 		end
 
 		def self.create(user)
-			res              = URI.parse("https://graph.facebook.com/v2.6/#{user.fb_id}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=#{FB_PAGEACCTOKEN}").read
+			res              = URI.parse("https://graph.facebook.com/v2.8/#{user.fb_id}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=#{FB_PAGEACCTOKEN}").read
 			r_user           = JSON.parse(res)
 			r_user           = JSON.parse(JSON.dump(r_user), object_class: OpenStruct)
 			user.first_name  = r_user.first_name
@@ -232,7 +232,7 @@ module Giskard
 						msg           = Giskard::Message.new(id, text, id, FBMESSENGER)
 						msg.timestamp = timestamp
 						screen        = Bot.nav.get(msg, user)
-						
+
 						# send answer
 						process_msg(user.fb_id,screen[:text],screen) unless screen[:text].nil?
 						if not screen[:elements].nil?

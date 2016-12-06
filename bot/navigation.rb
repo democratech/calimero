@@ -99,7 +99,8 @@ module Bot
 		# return the next screen
 		def get(msg, user)
 			Bot.log.debug "Read message: #{msg.text}"
-
+			Bot.log.debug user.state
+			
 			# load user if registered
 			user = @users.open(user)
 			_input       = user.state['expected_input']
@@ -107,19 +108,6 @@ module Bot
 
 			# we check that this message has not already been answered (i.e. bot sending a msg we already processed)
 			return nil,nil if user.already_answered(msg) and not DEBUG
-
-			# if user.seq == 1 and not msg.seq ==-1 then
-			#   Bot.log.warn "Bot upgrade detected"
-			#   msg.seq =-1
-			#   msg.text  ='api/bot_upgrade'
-			# end
-			# if msg.seq == -1 then
-			#   # msg comes from api and not from telegram
-			#   api_cb,api_payload=msg.text.split("\n",2).each {|x| x.strip!}
-			#   raise "no callback given" if api_cb.nil?
-			#   user.next_answer('free_text',1,api_cb)
-			#   user.state['api_payload'] = api_payload if !api_payload.nil?
-			# end
 
 			# reset
 			@users.save(user) and return self.get_reset(msg, user) if self.is_reset(msg.text)

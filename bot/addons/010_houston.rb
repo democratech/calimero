@@ -39,6 +39,11 @@ module Houston
 		messages={
 			:en=>{
 				:houston=>{
+					:f1_ans=>"1",
+					:f2_ans=>"2",
+					:f3_ans=>"3",
+					:f4_ans=>"4",
+					:f5_ans=>"5",
 					:no=>"Non",
 					:yes=>"Oui",
 					:welcome_answer=>"/start",
@@ -55,35 +60,18 @@ What do you want to do?
 You can recover a former message, or write a new one.
 Please use the following buttons to give me your choice.
 END
-# 					:ask_img_answer=>"Recover",
-# 					:ask_img=><<-END,
-# Let me recover your message...
-# END
-# 					:get_img=><<-END,
-# Here is your message!
-# END
-# 					:bad_img=><<-END,
-# I feel sorry that you don't like the image.  #{Bot.emoticons[:confused]}
-# Let's try again.
-# END
-# 					:good_img=><<-END,
-# Great! Please share this image on your social networks!
-# END
-# 					:ask_wrong=><<-END,
-# Hmmm... I can't recover your former message... #{Bot.emoticons[:confused]}
-# Please write a new one.
-# END
-# 					:ask_txt_answer=>"Write",
-# 					:ask_txt=><<-END,
-# According to you, what is the priority in France?
-# END
-# 					:end=><<-END,
-# I hope you enjoyed our conversation! See you!
-# END
+					:feedback=><<-END,
+Je viens d'être créée, j'ai besoin de votre ressenti pour m'améliorer. Que pensez-vous de votre expérience de conversation ?
+END
 				}
 			},
 			:fr=>{
 				:houston=>{
+					:f1_ans=>"1",
+					:f2_ans=>"2",
+					:f3_ans=>"3",
+					:f4_ans=>"4",
+					:f5_ans=>"5",
 					:no=>"Non",
 					:yes=>"Oui",
 					:welcome_answer=>"/start",
@@ -100,25 +88,6 @@ END
 					:too_long => <<-END,
 La limite de caractères est de #{$HOUSTON_TEXT_LIM}. Merci de recommencer.
 END
-# 					:ask_img_answer=>"Retrouver",
-# 					:ask_img=><<-END,
-# Je recherche votre demande...
-# END
-# 					:get_img=><<-END,
-# Voici votre demande ! Vous convient-elle?
-# END
-# 					:bad_img=><<-END,
-# Je suis navré que l'image ne vous plaise pas.  #{Bot.emoticons[:confused]}
-# Reprenons.
-# END
-# 					:good_img=><<-END,
-# Génial ! Je vous laisse alors partager cette image sur vos réseaux sociaux !
-# END
-# 					:ask_wrong=><<-END,
-# Hmmm... Je ne retrouve pas votre priorité... #{Bot.emoticons[:confused]}
-# Reprenons.
-# END
-					# :ask_txt_answer=>"Ecrire",
 					:ask_theme=><<-END,
 A quel thème pouvez-vous associer ce propos ?
 END
@@ -128,7 +97,7 @@ END
 					:feedback=><<-END,
 Je viens d'être créée, j'ai besoin de votre ressenti pour m'améliorer. Que pensez-vous de votre expérience de conversation ?
 END
-					
+
 				}
 			}
 		}
@@ -147,28 +116,26 @@ END
 				:too_long=> {
 					:callback=>"houston/too_long"
 				},
-				# :get_img=>{
-				# 	:callback=>"houston/get_img",
-				# 	:parse_mode=>"HTML",
-				# 	:kbd=>["houston/bad_img","houston/good_img"],
-				# 	:kbd_options=>{:resize_keyboard=>true,:one_time_keyboard=>false,:selective=>true}
-				# },
-				# :bad_img=>{
-				# 	:answer=>"houston/no",
-				# 	:jump_to=>"houston/ask_txt"
-				# },
-				# :good_img=>{
-				# 	:answer=>"houston/yes",
-				# 	:callback=>"houston/end"
-				# },
-				#
-				# :ask_img=>{
-				# 	:answer=>"houston/ask_img_answer",
-				# 	:callback=>"houston/ask_img"
-				# },
-				# :ask_wrong=>{
-				# 	:jump_to=>"houston/menu"
-				# },
+				:f1=>{
+					:answer=>"houston/f1_ans",
+					:callback=>"houston/feedback_save",
+				},
+				:f2=>{
+					:answer=>"houston/f2_ans",
+					:callback=>"houston/feedback_save",
+				},
+				:f3=>{
+					:answer=>"houston/f3_ans",
+					:callback=>"houston/feedback_save",
+				},
+				:f4=>{
+					:answer=>"houston/f4_ans",
+					:callback=>"houston/feedback_save",
+				},
+				:f5=>{
+					:answer=>"houston/f5_ans",
+					:callback=>"houston/feedback_save",
+				},
 				:ask_themes=>{
 					:callback=>"houston/ask_themes"
 				},
@@ -176,7 +143,9 @@ END
 				:delivery=>{ :jump_to=>"houston/feedback"},
 				:end=>{},
 				:feedback=>{
-					:callback=>"houston/feedback"
+					:callback=>"houston/feedback",
+					:kbd=>["houston/f1","houston/f2","houston/f3","houston/f4","houston/f5"],
+					:kbd_options=>{:resize_keyboard=>true,:one_time_keyboard=>false,:selective=>true}
 				}
 
 			}
@@ -202,17 +171,7 @@ END
 				:title 		=> "Exemple",
 				:image_url  => "http://guhur.net/img/demo2.jpg",
 			}  ]
-		# results = Bot.db.query("houston_select_dol_last")
-		# results.each do |row|
-		# 	output = "img/#{row['date']}_#{row['usr_id']}.jpg"
-		# 	if not File.file?(output) then
-		# 		image_name = create_image(row['msg'], row['first_name'], row['url'], output)
-		# 	end
-		#   	screen[:elements] << {
-		# 	  "title" 		=> row['msg'],
-		# 	  "image_url"  => output
-		#   	}
-		# end
+
 		user.next_answer('free_text',1,"houston_save_grievance")
 		return self.get_screen(screen,user,msg)
 	end
@@ -222,25 +181,6 @@ END
 		user.next_answer('answer')
 		return self.get_screen(screen,user,msg)
 	end
-
-	# def houston_menu(msg,user,screen)
-	# 	Bot.log.info "#{__method__}"
-	# 	screen[:kbd_del]=["houston/menu"] #comment if you want the houston button to be displayed on the houston menu
-	# 	user.next_answer('free_text')
-	# 	return self.get_screen(screen,user,msg)
-	# end
-
-	# def houston_ask_img(msg,user,screen)
-	# 	Bot.log.info "#{__method__}"
-	# 	# search for an image
-	# 	# if image exists:
-	# 	if 1==1 then
-	# 		screen=self.find_by_name("houston/get_img",self.get_locale(user))
-	# 	else
-	# 		screen=self.find_by_name("houston/ask_wrong",self.get_locale(user))
-	# 	end
-	# 	return self.get_screen(screen,user,msg)
-	# end
 
 	def houston_save_grievance(msg,user,screen)
 		Bot.log.info "#{__method__}"
@@ -285,6 +225,7 @@ END
 	end
 
 	def houston_save_themes(msg, usr, screen)
+		Bot.log.info "#{__method__}"
 		theme = usr.state['buffer']
 
 		# check theme id and save it
@@ -310,8 +251,16 @@ END
 		return screen
 	end
 
-	def houston_feedback(msg, usr, screen)
-		Bot.db.query("houston_feedback", [usr.id, usr.state['buffer'], "TRUE"]) 
+	def houston_feedback(msg, user, screen)
+		Bot.log.info "#{__method__}"
+		# user.next_answer('answer')
+		user.next_answer('free_text',1,"houston/feedback_save")
+		return self.get_screen(screen,user,msg)
+	end
+
+	def houston_feedback_save(msg, usr, screen)
+		Bot.log.info "#{__method__}"
+		Bot.db.query("houston_feedback", [usr.id, usr.state['buffer'], "TRUE"])
 		screen=self.find_by_name("houston/end", self.get_locale(usr))
 		Bot.log.info screen
 		return screen

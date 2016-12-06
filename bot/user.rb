@@ -87,16 +87,17 @@ module Bot
 			@state['buffer']          = buffer
 			@state['expected_input']  = type
 			@state['expected_size']   = size
+			Bot.log.debug @state['expected_size'] 
 			@state['callback']        = callback
 		end
 
 		def already_answered(msg)
 			return false if msg.seq ==-1 # external command
-			answered = @last_msg_time > -1 and @last_msg_time < msg.timestamp.to_i
-			@last_msg_time = [@last_msg_time, msg.timestamp].max
+			answered = @last_msg_time > -1 and @last_msg_time >= msg.timestamp
 			if answered then
-				Bot.log.debug "Message already answered: #{@last_msg_time} and current time: #{msg.timestamp}"
+				Bot.log.debug "Message already answered: #{@last_msg_time} and current msg time: #{msg.timestamp}"
 			end
+			@last_msg_time = [@last_msg_time, msg.timestamp].max
 			return answered
 		end
 
