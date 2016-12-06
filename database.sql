@@ -87,6 +87,13 @@ foreign key (img_id)
         on update cascade
 );
 
+
+CREATE TABLE feedback(
+id serial PRIMARY KEY,
+usr_id integer not null,
+useful boolean,
+msg text
+);
 -- TODO
 -- delimiter //
 -- CREATE trigger updateLastDate

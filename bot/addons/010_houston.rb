@@ -27,6 +27,7 @@ module Houston
 			"houston_select_cat" => "SELECT * FROM #{DB_PREFIX}categories limit 3",
 			"houston_insert"  => "INSERT INTO #{DB_PREFIX}messages (usr_id, msg, img_id) VALUES ($1, $2, $3) returning date",
 			"houston_select_img"  => "SELECT * FROM #{DB_PREFIX}images WHERE category = $1 order by random() limit 1",
+			"houston_feedback" => "INSERT INTO #{DB_PREFIX}feedback (usr_id, msg, useful) VALUES ($1, $2, $3)"
 		}
 		queries.each { |k,v| Bot.db.prepare(k,v) }
 	end
@@ -122,8 +123,12 @@ END
 A quel thème pouvez-vous associer ce propos ?
 END
 					:end=><<-END,
-J'espère que vous êtes satifait(e) de moi. À bientôt !
+Je vous remercie de votre temps. À bientôt !
 END
+					:feedback=><<-END,
+Je viens d'être créée, j'ai besoin de votre ressenti pour m'améliorer. Que pensez-vous de votre expérience de conversation ?
+END
+					
 				}
 			}
 		}
@@ -168,9 +173,11 @@ END
 					:callback=>"houston/ask_themes"
 				},
 				:carousel=>{},
-				:delivery=>{ :jump_to=>"houston/end"},
-				:end=>{}
-
+				:delivery=>{ :jump_to=>"houston/feedback"},
+				:end=>{},
+				:feedback=>{
+					:callback=>"houston/feedback"
+				}
 
 			}
 		}
@@ -290,7 +297,7 @@ END
 		date = Time.parse(r[0]['date']).to_i
 		output = "img/#{date}_#{usr.id}.jpg"
 		if not File.file?(output) then
-			image_name = create_image(usr.buffer, usr.first_name, results[0]['url'], output)
+			image_name = create_image(usr.buffer, usr.first_name, "#{results[0]['url']}", output)
 		end
 
 		# FIXME send
@@ -303,6 +310,12 @@ END
 		return screen
 	end
 
+	def houston_feedback(msg, usr, screen)
+		Bot.db.query("houston_feedback", [usr.id, usr.state['buffer'], "TRUE"]) 
+		screen=self.find_by_name("houston/end", self.get_locale(usr))
+		Bot.log.info screen
+		return screen
+	end
 
 end
 
