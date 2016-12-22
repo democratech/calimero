@@ -26,7 +26,7 @@ module Giskard
 		def self.send(payload,type="messages",file_url=nil)
 			if file_url.nil? then
 				begin
-					RestClient.post "https://graph.facebook.com/v2.8/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
+					RestClient.post "https://graph.facebook.com/v2.7/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
 				rescue => e
 					Bot.log.info e.response
 				end
@@ -67,7 +67,7 @@ module Giskard
 						payload={"recipient"=>{"id"=>id_sender},
 							"message"=>{"text"=>"Bonjour ! Je suis encore en construction ! Merci de revenir plus tard. "}}
 						begin
-							RestClient.post "https://graph.facebook.com/v2.8/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
+							RestClient.post "https://graph.facebook.com/v2.7/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
 						rescue => e
 							Bot.log.info e.response
 						end
