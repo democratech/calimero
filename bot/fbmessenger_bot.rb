@@ -26,14 +26,7 @@ module Giskard
 		def self.send(payload,type="messages",file_url=nil)
 			if file_url.nil? then
 				begin
-					RestClient.post "https://graph.facebook.com/v2.6/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
-				rescue => e
-					Bot.log.info e.response
-				end
-			else # image upload # FIXME file upload does not work : 400 Bad Request
-				params={"recipient"=>payload['recipient'], "message"=>payload['message'], "filedata"=>File.new(file_url,'rb'),"multipart"=>true}
-				begin
-					RestClient.post "https://graph.facebook.com/v2.6/me/#{type}?access_token=#{FB_PAGEACCTOKEN}",params
+					RestClient.post "https://graph.facebook.com/v2.8/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
 				rescue => e
 					Bot.log.info e.response
 				end
@@ -43,158 +36,12 @@ module Giskard
 		def self.init()
 			payload={ "setting_type"=>"greeting", "greeting"=>{ "text"=>"Hello, ca fiouze ?" }}
 			Giskard::FBMessengerBot.send(payload,"thread_settings")
-			Giskard::FBMessengerBot.load_queries
 		end
 
-		def self.load_queries
-			queries={
-				"fb_select_usr_id" => "SELECT * FROM #{DB_PREFIX}fb_users WHERE usr_id = $1",
-				"fb_select_id" => "SELECT * FROM #{DB_PREFIX}fb_users WHERE id = $1",
-				"fb_insert"  => "INSERT INTO #{DB_PREFIX}fb_users (id, usr_id, profile_pic, locale, timezone, gender) VALUES ($1, $2, $3, $4, $5, $6)"
-			}
-			queries.each { |k,v| Bot.db.prepare(k,v) }
-		end
-
-		def self.add(user)
-			if Bot.db.is_connected? then
-				params = [
-					user.fb_id,
-					user.id,
-					user.profile_pic,
-					user.gender,
-					user.locale,
-					user.timezone
-				]
-				Bot.db.query("fb_insert", params)
-			end
-			return user
-		end
-
-		def self.load(user)
-			if Bot.db.is_connected? then
-				params = user.id !=  -1 ? [user.id] : [user.fb_id]
-				req    = user.id !=  -1 ? "fb_select_usr_id" : "fb_select_id"
-				r = Bot.db.query(req, params)
-				r.each do |row|
-					user.gender 	  = row['gender']
-					user.profile_pic  = row['profile_pic']
-					user.locale 	  = row['locale']
-					user.timezone  	  = row['timezone']
-					user.fb_id	      = row['id']
-					user.id	     	  = row['usr_id']
-					break
-				end
-			end
-			return user
-		end
-
-		def self.create(user)
-			res              = URI.parse("https://graph.facebook.com/v2.8/#{user.fb_id}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=#{FB_PAGEACCTOKEN}").read
-			r_user           = JSON.parse(res)
-			r_user           = JSON.parse(JSON.dump(r_user), object_class: OpenStruct)
-			user.first_name  = r_user.first_name
-			user.last_name   = r_user.last_name
-			user.gender		 = (r_user.gender == "male")? 'm': "f"
-			user.timezone	 = r_user.timezone
-			user.locale		 = r_user.locale
-			user.profile_pic = r_user.profile_pic
-			Bot.log.debug("Nouveau participant : #{user.first_name} #{user.last_name}")
-			return user
-		end
 
 		helpers do
 			def authorized # Used for API calls and to verify webhook
 				headers['Secret-Key']==FB_SECRET
-			end
-
-			def send_msg(id,text,kbd=nil)
-				msg={"recipient"=>{"id"=>id},"message"=>{"text"=>text}}
-				if not kbd.nil? then
-					msg["message"]["quick_replies"]=[]
-					kbd.each do |k|
-						msg["message"]["quick_replies"].push({
-							"content_type"=>"text",
-							"title"=>k,
-							"payload"=>k
-						})
-					end
-				end
-				Giskard::FBMessengerBot.send(msg)
-			end
-
-			def send_typing(id)
-				Giskard::FBMessengerBot.send({"recipient"=>{"id"=>id},"sender_action"=>"typing_on"})
-			end
-
-			def send_image(id,img_url)
-				payload={"recipient"=>{"id"=>id},"message"=>{"attachment"=>{"type"=>"image","payload"=>{}}}}
-				if not img_url.match(/http/).nil? then
-					payload["message"]["attachment"]["payload"]={"url"=>img_url}
-					Giskard::FBMessengerBot.send(payload)
-				else
-					Giskard::FBMessengerBot.send(payload,"messages",img_url)
-				end
-			end
-
-			def send_attachment(id,attachment)
-				Bot.log.info "#{__method__}"
-				payload={"recipient"=>{"id"=>id},
-						"message"=>{"attachment"=>attachment}
-					}
-				Bot.log.info payload.to_json
-				Giskard::FBMessengerBot.send(payload)
-			end
-
-			def send_elements(id,elmts)
-				Bot.log.info "#{__method__}"
-				payload={"recipient"=>{"id"=>id},
-						"message"=>{"attachment"=>{
-											"type"=>"template",
-											"payload"=>{
-													"template_type" =>"generic",
-													"elements" 		=> elmts
-													}
-											}
-									}
-					}
-				Giskard::FBMessengerBot.send(payload)
-			end
-
-			def process_msg(id,msg,options)
-				lines=msg.split("\n")
-				buffer=""
-				max=lines.length
-				idx=0
-				image=false
-				kbd=nil
-				lines.each do |l|
-					next if l.empty?
-					idx+=1
-					image=(l.start_with?("image:") && (['.jpg','.png','.gif','.jpeg'].include? File.extname(l)))
-					if image && !buffer.empty? then # flush buffer before sending image
-						writing_time=buffer.length/TYPINGSPEED
-						send_typing(id)
-						sleep(writing_time)
-						send_msg(id,buffer)
-						buffer=""
-					end
-					if image then # sending image
-						send_typing(id)
-						send_image(id,l.split(":",2)[1])
-					else # sending 1 msg for every line
-						writing_time=l.length/TYPINGSPEED
-						writing_time=l.length/TYPINGSPEED_SLOW if max>1
-						send_typing(id)
-						sleep(writing_time)
-						if l.start_with?("no_preview:") then
-							l=l.split(':',2)[1]
-						end
-						if (idx==max)
-							kbd=options[:kbd]
-						end
-						send_msg(id,l,kbd)
-					end
-				end
 			end
 		end
 
@@ -216,34 +63,16 @@ module Giskard
 					Bot.log.debug messaging
 					id_sender = messaging.sender.id
 					id_receiv = messaging.recipient.id
-					timestamp = messaging.timestamp
-					id 		  = timestamp
 					if not messaging.message.nil? then
-						text      = messaging.message.text
-					elsif not messaging.postback.nil? then
-						text      = messaging.postback.payload
-					end
-					user     = Bot::User.new()
-					user.fb_id  = id_sender
-					user.bot = FBMESSENGER
-
-					if not text.nil? then
-						# read message
-						msg           = Giskard::Message.new(id, text, id, FBMESSENGER)
-						msg.timestamp = timestamp
-						screen        = Bot.nav.get(msg, user)
-
-						# send answer
-						process_msg(user.fb_id,screen[:text],screen) unless screen[:text].nil?
-						if not screen[:elements].nil?
-							send_elements(user.fb_id, screen[:elements])
-						end
-						# TODO send WebView
-						Bot.log.info screen
-						if not screen[:attachment].nil?
-							send_attachment(user.fb_id, screen[:attachment])
+						payload={"recipient"=>{"id"=>id_sender},
+							"message"=>{"text"=>"Bonjour ! Je suis encore en construction ! Merci de revenir plus tard. "}}
+						begin
+							RestClient.post "https://graph.facebook.com/v2.8/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
+						rescue => e
+							Bot.log.info e.response
 						end
 					end
+
 				end
 			end
 		end
