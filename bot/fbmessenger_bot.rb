@@ -66,9 +66,11 @@ module Giskard
 					if not messaging.message.nil? then
 						payload={"recipient"=>{"id"=>id_sender},
 							"message"=>{"text"=>"Bonjour ! Je suis encore en construction ! Merci de revenir plus tard. "}}
+						type="messages"
 						begin
 							RestClient.post "https://graph.facebook.com/v2.7/me/#{type}?access_token=#{FB_PAGEACCTOKEN}", payload.to_json, :content_type => :json
 						rescue => e
+							Bot.log.info e
 							Bot.log.info e.response
 						end
 					end
